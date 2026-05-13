@@ -125,11 +125,12 @@ CMD ["python", "src/automl_pipeline.py"]
 Оптимизация — минимальный образ (python:3.9-slim)
 
 ## Сборка и запуск:
+```
 docker build -t heart-disease-ml-pipeline .
 docker run heart-disease-ml-pipeline
-
+```
 ## CI/CD (GitHub Actions)
-
+```
 Настроен workflow в .github/workflows/ci-cd.yml:
 name: ML Pipeline CI/CD
 on:
@@ -167,23 +168,27 @@ jobs:
       run: docker build -t heart-disease-predictor:latest .
     - name: Test Docker container
       run: docker run heart-disease-predictor:latest python -m pytest tests/ -v
-
+```
 ## Git-команды для публикации:
+```
 git init
 git add .
 git commit -m "Initial commit: Heart Disease AutoML Pipeline"
 git branch -M main
 git remote add origin https://github.com/EkaZhuk/heart-disease-ml-pipeline.git
 git push -u origin main
+```
 
 ## Установка и запуск
+```
 git clone https://github.com/EkaZhuk/heart-disease-ml-pipeline.git
 cd heart-disease-ml-pipeline
 pip install -r requirements.txt
 python src/automl_pipeline.py
 pytest tests/ -v
-
+```
 ## Структура проекта
+```
 heart-disease-ml-pipeline/
 ├── data/heart.csv
 ├── src/
@@ -200,3 +205,4 @@ heart-disease-ml-pipeline/
 ├── .gitignore
 ├── .github/workflows/ci-cd.yml
 └── README.md
+```
