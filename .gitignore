@@ -16,8 +16,8 @@ env/
 data/*.csv
 
 # Plots & Results
-plots/
-results/
+#plots/
+#results/
 
 # OS
 .DS_Store
