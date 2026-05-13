@@ -101,10 +101,10 @@ heart.csv • Очистка • 4 модели • Accuracy model.pkl
 ### Запуск тестов:
 ```bash
 pytest tests/ -v
+```
 
-## Docker-контейнеризация
-
-FROM python:3.9-slim
+### Запуск тестов:
+``` FROM python:3.9-slim
 RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements.txt .
@@ -114,8 +114,8 @@ COPY data/ ./data/
 COPY tests/ ./tests/
 EXPOSE 5000
 CMD ["python", "src/automl_pipeline.py"]
-
-Функции контейнеризации:
+```
+## Функции контейнеризации:
 Изоляция окружения — все зависимости внутри контейнера
 
 Воспроизводимость — одинаковый результат на любой машине
