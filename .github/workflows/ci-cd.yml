@@ -1,0 +1,57 @@
+name: ML Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v
+    
+    - name: Create directories
+      run: |
+        mkdir -p models plots results
+    
+    - name: Run AutoML pipeline
+      run: |
+        python src/automl_pipeline.py
+    
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ml-models
+        path: models/
+  
+  build-docker:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Build Docker image
+      run: |
+        docker build -t heart-disease-predictor:latest .
+    
+    - name: Test Docker container
+      run: |
+        docker run heart-disease-predictor:latest python -m pytest tests/ -v

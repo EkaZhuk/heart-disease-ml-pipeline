@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+*.pkl
+*.joblib
+
+# IDE
+.vscode/
+.idea/
+
+# Data
+data/*.csv
+
+# Plots & Results
+plots/
+results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# pytest
+.pytest_cache/
+
+# Models
+models/*.pkl
