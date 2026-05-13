@@ -103,7 +103,7 @@ heart.csv • Очистка • 4 модели • Accuracy model.pkl
 pytest tests/ -v
 ```
 
-### Запуск тестов:
+### Docker-контейнеризация
 ``` FROM python:3.9-slim
 RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -173,11 +173,11 @@ git init
 git add .
 git commit -m "Initial commit: Heart Disease AutoML Pipeline"
 git branch -M main
-git remote add origin https://github.com/username/heart-disease-ml-pipeline.git
+git remote add origin https://github.com/EkaZhuk/heart-disease-ml-pipeline.git
 git push -u origin main
 
 ## Установка и запуск
-git clone https://github.com/username/heart-disease-ml-pipeline.git
+git clone https://github.com/EkaZhuk/heart-disease-ml-pipeline.git
 cd heart-disease-ml-pipeline
 pip install -r requirements.txt
 python src/automl_pipeline.py
