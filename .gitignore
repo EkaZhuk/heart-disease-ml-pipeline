@@ -1,34 +1,75 @@
-# Python
+# ---------- Python ----------
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# ---------- Virtual envs ----------
 venv/
 env/
-.env
-*.pkl
-*.joblib
+.venv/
+ENV/
+env.bak/
+venv.bak/
 
-# IDE
+# ---------- Distribution / packaging ----------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---------- Testing / coverage ----------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# ---------- Linting / typing ----------
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ---------- Env / secrets ----------
+.env
+.env.*
+!.env.example
+
+# ---------- IDE ----------
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Data
-data/*.csv
-
-# Plots & Results
-#plots/
-#results/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Jupyter
+# ---------- Jupyter ----------
 .ipynb_checkpoints/
 *.ipynb
 
-# pytest
-.pytest_cache/
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
 
-# Models
-models/*.pkl
+# ---------- Project-specific ----------
+# Data & artifacts (not committed)
+data/*.csv
+!data/.gitkeep
+
+models/
+!models/.gitkeep
+
+plots/
+!plots/.gitkeep
+
+results/
+!results/.gitkeep
+
+*.pkl
+*.joblib
+
+# temporary / legacy
+get-pip.pyrepo_dump.txt
