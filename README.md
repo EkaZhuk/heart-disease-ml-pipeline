@@ -197,13 +197,28 @@ docker build -t heart-disease-predictor .
 
 ### Запуск
 
+**Linux / macOS:**
+
 ```bash
 docker run --rm -v "$(pwd)/data:/app/data" heart-disease-predictor
 ```
 
+**Windows (Git Bash):**
+
+```bash
+MSYS_NO_PATHCONV=1 docker run --rm -v "C:/heart-disease-ml-pipeline/data:/app/data" heart-disease-predictor
+```
+
+**Windows (PowerShell):**
+
+```powershell
+docker run --rm -v "C:\heart-disease-ml-pipeline\data:/app/data" heart-disease-predictor
+```
+
 > **Важно:** датасет `heart.csv` не включён в образ (в `.gitignore`).
 > Монтируйте папку `data/` через `-v`, иначе пайплайн упадёт с
-> `FileNotFoundError`.
+> `FileNotFoundError`. Путь `C:/heart-disease-ml-pipeline` замените на
+> свой, если проект лежит в другом месте.
 
 ---
 
