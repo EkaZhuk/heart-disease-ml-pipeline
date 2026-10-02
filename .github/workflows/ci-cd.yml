@@ -26,10 +26,11 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install --with dev --no-root
+        run: poetry install --all-extras --no-root
 
       - name: Create synthetic dataset for CI
         run: |
+          mkdir -p data
           python - <<'EOF'
           import numpy as np
           import pandas as pd
