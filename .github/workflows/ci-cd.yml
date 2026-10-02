@@ -2,56 +2,120 @@ name: ML Pipeline CI/CD
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   test:
+    name: Test, lint, run pipeline
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Run tests
-      run: |
-        pytest tests/ -v
-    
-    - name: Create directories
-      run: |
-        mkdir -p models plots results
-    
-    - name: Run AutoML pipeline
-      run: |
-        python src/automl_pipeline.py
-    
-    - name: Upload model artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: ml-models
-        path: models/
-  
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pip install poetry==2.5.1
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install --with dev --no-root
+
+      - name: Create synthetic dataset for CI
+        run: |
+          python - <<'EOF'
+          import numpy as np
+          import pandas as pd
+
+          np.random.seed(42)
+          n = 300
+          df = pd.DataFrame({
+              "age": np.random.randint(29, 78, n),
+              "sex": np.random.randint(0, 2, n),
+              "cp": np.random.randint(0, 4, n),
+              "trestbps": np.random.randint(94, 201, n),
+              "chol": np.random.randint(126, 565, n),
+              "fbs": np.random.randint(0, 2, n),
+              "restecg": np.random.randint(0, 3, n),
+              "thalach": np.random.randint(71, 203, n),
+              "exang": np.random.randint(0, 2, n),
+              "oldpeak": np.round(np.random.uniform(0, 6.2, n), 1),
+              "slope": np.random.randint(0, 3, n),
+              "ca": np.random.randint(0, 4, n),
+              "thal": np.random.randint(0, 4, n),
+              "target": np.random.randint(0, 2, n),
+          })
+          df.to_csv("data/heart.csv", index=False)
+          print(f"Created synthetic dataset: {df.shape}")
+          EOF
+
+      - name: Run pre-commit (lint, format, types)
+        run: poetry run pre-commit run --all-files
+
+      - name: Run tests
+        run: poetry run pytest tests/ -v
+
+      - name: Run AutoML pipeline
+        run: poetry run python -m src.automl_pipeline
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-models
+          path: |
+            models/
+            plots/
+            results/
+          retention-days: 7
+
   build-docker:
+    name: Build and test Docker image
     needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Build Docker image
-      run: |
-        docker build -t heart-disease-predictor:latest .
-    
-    - name: Test Docker container
-      run: |
-        docker run heart-disease-predictor:latest python -m pytest tests/ -v
+      - uses: actions/checkout@v4
+
+      - name: Create synthetic dataset for Docker
+        run: |
+          mkdir -p data
+          python - <<'EOF'
+          import numpy as np
+          import pandas as pd
+
+          np.random.seed(42)
+          n = 300
+          df = pd.DataFrame({
+              "age": np.random.randint(29, 78, n),
+              "sex": np.random.randint(0, 2, n),
+              "cp": np.random.randint(0, 4, n),
+              "trestbps": np.random.randint(94, 201, n),
+              "chol": np.random.randint(126, 565, n),
+              "fbs": np.random.randint(0, 2, n),
+              "restecg": np.random.randint(0, 3, n),
+              "thalach": np.random.randint(71, 203, n),
+              "exang": np.random.randint(0, 2, n),
+              "oldpeak": np.round(np.random.uniform(0, 6.2, n), 1),
+              "slope": np.random.randint(0, 3, n),
+              "ca": np.random.randint(0, 4, n),
+              "thal": np.random.randint(0, 4, n),
+              "target": np.random.randint(0, 2, n),
+          })
+          df.to_csv("data/heart.csv", index=False)
+          EOF
+
+      - name: Build Docker image
+        run: docker build -t heart-disease-predictor:latest .
+
+      - name: Test Docker container
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/data:/app/data" \
+            heart-disease-predictor:latest
