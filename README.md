@@ -19,6 +19,11 @@
 
 **Тип задачи:** бинарная классификация.
 
+### Документация
+
+- [Model Card](model_card.md) — паспорт модели: назначение, ограничения, метрики
+- [BPMN-диаграмма](Model_BPMN.md) — схема использования модели и пайплайн переобучения
+
 ---
 
 ## Схема пайплайна
@@ -99,6 +104,86 @@
 
 ---
 
+## Виртуальное окружение
+
+В проекте используется **Poetry** — современный менеджер зависимостей и
+виртуальных окружений.
+
+### Как организовано
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| Манифест проекта | `pyproject.toml` | Список зависимостей, настройки ruff/mypy |
+| Lock-файл | `poetry.lock` | Точные версии всех пакетов (коммитится в Git) |
+| Изоляция | `.venv/` или Poetry-кэш | Виртуальное окружение (в `.gitignore`) |
+
+### Воспроизводимость
+
+`poetry.lock` фиксирует **точные версии** всех пакетов и их зависимостей.
+У любого разработчика, выполнившего `poetry install`, встанут **те же
+версии**, что и у автора — это гарантирует **воспроизводимость** результатов.
+
+### Poetry vs venv
+
+| Критерий | venv + pip | Poetry |
+|----------|------------|--------|
+| Создание окружения | ✅ | ✅ |
+| Управление зависимостями | ❌ вручную | ✅ автоматически |
+| Фиксация версий | ❌ `requirements.txt` без версий | ✅ `poetry.lock` |
+| Разрешение конфликтов | ❌ вручную | ✅ автоматически |
+| Разделение на группы (main/dev) | ❌ | ✅ `[tool.poetry.group.dev]` |
+| Воспроизводимость | ⚠️ частичная | ✅ полная |
+
+**Вывод:** Poetry выбран, потому что даёт **воспроизводимость** и
+**автоматическое управление зависимостями** — то, чего не хватает
+`venv + pip`.
+
+---
+
+## Линтеры и форматтеры
+
+### Настройка
+
+Все инструменты настроены в **`pyproject.toml`** и **`.pre-commit-config.yaml`**.
+
+| Инструмент | Назначение | Где настроен |
+|-----------|------------|--------------|
+| **ruff** | Линтер (PEP 8, pyflakes, isort, bugbear) | `[tool.ruff]` в `pyproject.toml` |
+| **ruff-format** | Форматтер (замена black) | `[tool.ruff.format]` |
+| **mypy** | Проверка типов | `[tool.mypy]` |
+| **trailing-whitespace** | Убирает пробелы в конце строк | `.pre-commit-config.yaml` |
+| **end-of-file-fixer** | Добавляет перевод строки в конце файла | `.pre-commit-config.yaml` |
+| **check-yaml** | Проверяет YAML-синтаксис | `.pre-commit-config.yaml` |
+| **check-toml** | Проверяет TOML-синтаксис | `.pre-commit-config.yaml` |
+
+### Контроль PEP 8 в CI/CD
+
+В `.github/workflows/ci-cd.yml` есть шаг:
+
+```yaml
+- name: Run pre-commit (lint, format, types)
+  run: poetry run pre-commit run --all-files
+```
+
+Это значит, что **при каждом push** в `main` и **при каждом pull request**
+GitHub Actions:
+1. Устанавливает зависимости через Poetry
+2. Запускает **все pre-commit хуки** (включая ruff, который проверяет PEP 8)
+3. Если хотя бы один хук упал — workflow **падает**, PR **не принимается**
+
+Таким образом, **код без PEP 8-соответствия не попадёт в main**.
+
+### Локальный запуск
+
+```bash
+pre-commit install          # установить хуки (один раз)
+pre-commit run --all-files  # прогнать все проверки вручную
+```
+
+Хуки также запускаются **автоматически при каждом `git commit`**.
+
+---
+
 ## Установка
 
 ### Способ 1: Poetry (рекомендуется)
@@ -106,7 +191,7 @@
 ```bash
 git clone https://github.com/EkaZhuk/heart-disease-ml-pipeline.git
 cd heart-disease-ml-pipeline
-poetry install --with dev
+poetry install --all-extras
 ```
 
 ### Способ 2: pip + venv
@@ -153,12 +238,6 @@ pytest tests/ -v
 ```bash
 pre-commit run --all-files
 ```
-
-Проверяет:
-- `ruff` — линтер (pycodestyle, pyflakes, isort, bugbear, print, ...)
-- `ruff-format` — форматтер (замена black)
-- `mypy` — статическая типизация
-- `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-toml`
 
 ---
 
@@ -217,8 +296,7 @@ docker run --rm -v "C:\heart-disease-ml-pipeline\data:/app/data" heart-disease-p
 
 > **Важно:** датасет `heart.csv` не включён в образ (в `.gitignore`).
 > Монтируйте папку `data/` через `-v`, иначе пайплайн упадёт с
-> `FileNotFoundError`. Путь `C:/heart-disease-ml-pipeline` замените на
-> свой, если проект лежит в другом месте.
+> `FileNotFoundError`.
 
 ---
 
@@ -227,9 +305,11 @@ docker run --rm -v "C:\heart-disease-ml-pipeline\data:/app/data" heart-disease-p
 Workflow `.github/workflows/ci-cd.yml` запускается на push и pull request
 в `main`:
 
-1. **test** — установка зависимостей, прогон тестов, запуск пайплайна,
-   загрузка модели как artifact
-2. **build-docker** — сборка образа, тестовый запуск контейнера
+1. **test** — установка Poetry, прогон `pre-commit` (PEP 8 + типы),
+   запуск тестов, запуск пайплайна, загрузка модели как artifact
+2. **build-docker** — сборка Docker-образа
+
+Обе задачи **обязательны**: если хотя бы одна падает, PR не принимается.
 
 ---
 
@@ -240,7 +320,6 @@ heart-disease-ml-pipeline/
 ├── .github/
 │   └── workflows/
 │       └── ci-cd.yml             # CI/CD pipeline
-├── configs/                       # (опционально) YAML-конфиги
 ├── data/
 │   └── heart.csv                 # датасет (не коммитится)
 ├── models/                        # артефакты моделей (не коммитятся)
@@ -261,6 +340,8 @@ heart-disease-ml-pipeline/
 ├── Dockerfile
 ├── poetry.lock                   # lock-файл зависимостей
 ├── pyproject.toml                # конфиг Poetry + ruff + mypy
+├── model_card.md                 # паспорт модели
+├── Model_BPMN.md                 # BPMN-диаграммы
 └── README.md
 ```
 
