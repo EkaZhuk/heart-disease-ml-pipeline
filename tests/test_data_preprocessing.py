@@ -29,6 +29,22 @@ class TestDataPreprocessing:
         df_clean = preprocessor.handle_missing_values(df)
         assert df_clean.isnull().sum().sum() == 0
 
+    def test_fix_target_encoding(self, preprocessor):
+        """Тест переворота целевой переменной: 0 и 1 меняются местами"""
+        df = pd.DataFrame({"age": [50, 60, 70], "target": [1, 0, 1]})
+        df_fixed = preprocessor.fix_target_encoding(df)
+
+        assert df_fixed["target"].tolist() == [0, 1, 0]
+        assert df["target"].tolist() == [1, 0, 1]
+
+    def test_remove_duplicates(self, preprocessor):
+        """Тест удаления полных дубликатов"""
+        df = pd.DataFrame({"age": [50, 50, 60], "target": [1, 1, 0]})
+        df_unique = preprocessor.remove_duplicates(df)
+
+        assert len(df_unique) == 2
+        assert df_unique.duplicated().sum() == 0
+
     def test_split_data(self, preprocessor):
         """Тест разделения данных"""
         df = preprocessor.load_data()

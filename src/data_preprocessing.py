@@ -85,6 +85,46 @@ class DataPreprocessor:
 
         return df
 
+    def fix_target_encoding(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Приведение целевой переменной к виду: 1 — болезнь есть, 0 — нет.
+
+        В файле значения перепутаны: среднее `ca` у записей с target = 1
+        ниже, чем с target = 0, хотя при болезни оно должно быть выше.
+
+        Args:
+            df: Исходный DataFrame.
+
+        Returns:
+            DataFrame с исправленной целевой переменной.
+        """
+        if not config.invert_target:
+            return df
+
+        df = df.copy()
+        df[self.target_column] = 1 - df[self.target_column]
+        logger.info("Целевая переменная перевёрнута: 1 — болезнь есть, 0 — нет")
+        return df
+
+    def remove_duplicates(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Удаление полностью совпадающих строк.
+
+        Вызывается до разделения на выборки, иначе одна и та же запись
+        может попасть и в обучение, и в тест (утечка данных).
+
+        Args:
+            df: DataFrame с возможными дубликатами.
+
+        Returns:
+            DataFrame без полных дубликатов.
+        """
+        df_unique = df.drop_duplicates().reset_index(drop=True)
+        logger.info(
+            "Удалено дубликатов: %d. Осталось записей: %d",
+            len(df) - len(df_unique),
+            len(df_unique),
+        )
+        return df_unique
+
     def split_data(
         self,
         df: pd.DataFrame,
@@ -151,8 +191,10 @@ class DataPreprocessor:
         config.ensure_dirs()
 
         df = self.load_data()
+        df = self.fix_target_encoding(df)
         self.basic_eda(df)
         df = self.handle_missing_values(df)
+        df = self.remove_duplicates(df)
         X_train, X_test, y_train, y_test = self.split_data(df)
         X_train_scaled, X_test_scaled = self.scale_features(X_train, X_test)
 

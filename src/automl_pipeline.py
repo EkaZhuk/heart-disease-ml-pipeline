@@ -160,6 +160,7 @@ class CustomAutoML:
         save_plots: bool = True,
         X_train: np.ndarray | None = None,
         y_train: pd.Series | None = None,
+        feature_names: list[str] | None = None,
     ) -> dict[str, float]:
         """Оценка модели на тестовых данных + кросс-валидация.
 
@@ -169,6 +170,7 @@ class CustomAutoML:
             save_plots: Сохранять ли графики.
             X_train: Обучающие признаки (для CV).
             y_train: Обучающие метки (для CV).
+            feature_names: Названия признаков для графика важности.
 
         Returns:
             Словарь с метриками.
@@ -211,7 +213,7 @@ class CustomAutoML:
 
         if save_plots:
             self._plot_confusion_matrix(y_test, y_pred)
-            self._plot_feature_importance()
+            self._plot_feature_importance(feature_names)
             self._plot_roc_curve(y_test, y_pred_proba)
 
         return metrics
@@ -238,8 +240,13 @@ class CustomAutoML:
             config.plots_dir / "confusion_matrix.png",
         )
 
-    def _plot_feature_importance(self) -> None:
-        """Построение графика важности признаков (если модель их имеет)."""
+    def _plot_feature_importance(self, feature_names: list[str] | None = None) -> None:
+        """Построение графика важности признаков (если модель их имеет).
+
+        Args:
+            feature_names: Названия признаков. Если None — подписи вида feature_N,
+                где N — номер столбца в исходных данных.
+        """
         if self.best_model is not None and hasattr(
             self.best_model, "feature_importances_"
         ):
@@ -247,9 +254,15 @@ class CustomAutoML:
             importances = self.best_model.feature_importances_
             indices = np.argsort(importances)[::-1][:10]
 
+            labels = [
+                feature_names[i] if feature_names is not None else f"feature_{i}"
+                for i in indices
+            ]
+
             plt.bar(range(len(indices)), importances[indices])
+            plt.xticks(range(len(indices)), labels, rotation=45, ha="right")
             plt.title(f"Top 10 Feature Importances - {self.best_model_name}")
-            plt.xlabel("Feature Index")
+            plt.xlabel("Feature")
             plt.ylabel("Importance")
             plt.tight_layout()
             plt.savefig(config.plots_dir / "feature_importance.png", dpi=100)
@@ -363,7 +376,13 @@ def run_automl_pipeline(
     automl = CustomAutoML()
     automl.fit(X_train, y_train)
 
-    metrics = automl.evaluate(X_test, y_test, X_train=X_train, y_train=y_train)
+    metrics = automl.evaluate(
+        X_test,
+        y_test,
+        X_train=X_train,
+        y_train=y_train,
+        feature_names=preprocessor.feature_columns,
+    )
 
     results_df = automl.compare_all_models(X_train, y_train, X_test, y_test)
 

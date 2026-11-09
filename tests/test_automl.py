@@ -1,6 +1,8 @@
 import os
 import sys
+from types import SimpleNamespace
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -60,3 +62,17 @@ class TestCustomAutoML:
 
         assert "accuracy" in metrics
         assert 0 <= metrics["accuracy"] <= 1
+
+    def test_feature_importance_labels(self, automl, monkeypatch):
+        """На графике важности подписаны названия признаков по убыванию важности"""
+        automl.best_model = SimpleNamespace(
+            feature_importances_=np.array([0.1, 0.7, 0.2])
+        )
+        automl.best_model_name = "Fake"
+        monkeypatch.setattr(plt, "savefig", lambda *args, **kwargs: None)
+        monkeypatch.setattr(plt, "close", lambda *args, **kwargs: None)
+
+        automl._plot_feature_importance(["age", "chol", "thal"])
+
+        labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
+        assert labels == ["chol", "thal", "age"]

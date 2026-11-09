@@ -28,6 +28,9 @@ class Config(BaseSettings):
 
     # Данные
     target_column: str = "target"
+    # В версии набора с Kaggle 1 означает отсутствие болезни, поэтому метки
+    # переворачиваются, чтобы в проекте 1 означало наличие болезни.
+    invert_target: bool = True
     test_size: float = Field(0.2, gt=0.0, lt=1.0)
     random_state: int = 42
 
